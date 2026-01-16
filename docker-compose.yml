@@ -1,0 +1,14 @@
+
+# docker-compose file for development
+# "undistort" subdirectory is bind-mounted into the container for easy editing
+
+services:
+  undistort:
+    build: .
+    volumes:
+    - type: bind
+      source: ./undistort
+      target: /undistort
+    command: /undistort/undistort.py --port 8000
+    ports:
+      - 127.0.0.1:8000:8000

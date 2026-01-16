@@ -1,0 +1,5 @@
+__pycache__
+*.kate-swp
+/undistort/data/
+/undistort/test-output/
+
