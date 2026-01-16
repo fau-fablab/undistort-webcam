@@ -95,6 +95,7 @@ def take_calib_image():
     Take calibration photo and save to folder
     """
     dest = f"{CONFIG["calibration-dir"]}/undistort-calib-{num_calib_images() + 1}.jpg"
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
     cv2.imwrite(dest, get_image())
     
 def calib_images():
