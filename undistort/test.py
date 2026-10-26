@@ -57,7 +57,7 @@ def assert_approximately_equal_to_image(actual, expected, threshold) -> None:
     actual = decode_image(actual)
     expected = decode_image(expected)
     # Normalized difference
-    diff_relative = np.average(np.abs(actual - expected)) / 255
+    diff_relative = np.average(np.abs(actual.astype(np.int16) - expected)) / 255
     image_dir = os.path.dirname(__file__) + "/test-output/"
     if not os.path.isdir(image_dir):
         os.mkdir(image_dir)

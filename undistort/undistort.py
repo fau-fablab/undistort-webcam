@@ -42,7 +42,7 @@ CONFIG = {
     "calibration-dir": SCRIPT_DIRECTORY + "/data/calibration/",
     #
     # 
-    "output-image": SCRIPT_DIRECTORY + "/data/output/output.png",
+    "output-image": SCRIPT_DIRECTORY + "/data/output/output.jpg",
     "port": 8080
     }
 
@@ -86,7 +86,7 @@ def main_process_image():
     undistorted = calibration.undistort_image(distorted, crop=False)
     logging.info("Saving output")
     os.makedirs(os.path.dirname(CONFIG["output-image"]), exist_ok=True)
-    cv2.imwrite(CONFIG["output-image"], undistorted)
+    cv2.imwrite(CONFIG["output-image"], undistorted, [cv2.IMWRITE_JPEG_QUALITY, 95])
     assert os.path.isfile(CONFIG["output-image"])
     logging.info("Done processing")
 
@@ -179,7 +179,7 @@ class UndistortHTTPRequestHandler(BaseHTTPRequestHandler):
         # Processed image
         elif self.path == "/image":
             main_process_image()
-            contenttype = "image/png"
+            contenttype = "image/png" if CONFIG["output-image"].endswith(".png") else "image/jpeg"
             with open(CONFIG["output-image"], 'rb') as f:
                 outputdata = f.read()
         ######

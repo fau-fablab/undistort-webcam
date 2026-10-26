@@ -4,7 +4,7 @@ Removes "fisheye" distortion from a camera image.
 
 Input image is taken from a JPEG as local file or via HTTP(S).
 
-Output image is served via a simple webserver as PNG.
+Output image is served via a simple webserver as JPEG (or PNG if `--output-image` ends with `.png`).
 
 Calibration can be triggered via the web interface.
 
