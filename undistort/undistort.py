@@ -73,14 +73,32 @@ def get_image(url_or_path: str = None):
             data = np.frombuffer(f.read(), dtype="uint8")
     return cv2.imdecode(data, cv2.IMREAD_COLOR)
 
+_calibration = None
+_calibration_mtime = None
+
+def get_calibration():
+    """
+    Return the calibration from the calibration file.
+    
+    The file is only read again if it was modified since the last call
+    (e.g. after recalibrating or replacing it manually). Keeping the same
+    CameraCalibration object lets it reuse its undistortion maps.
+    """
+    global _calibration, _calibration_mtime
+    if not os.path.isfile(calibration_file_path()):
+        raise Exception("Calibration file not found, please calibrate first")
+    mtime = os.stat(calibration_file_path()).st_mtime_ns
+    if mtime != _calibration_mtime:
+        _calibration = CameraCalibration()
+        _calibration.load_calibration(calibration_file_path())
+        _calibration_mtime = mtime
+    return _calibration
+
 def main_process_image():
     """
     Load calibration, fetch image, undistort, save to output file
     """
-    if not os.path.isfile(calibration_file_path()):
-        raise Exception("Calibration file not found, please calibrate first")
-    calibration = CameraCalibration()
-    calibration.load_calibration(calibration_file_path())
+    calibration = get_calibration()
     distorted = get_image()
     logging.info("Processing image")
     undistorted = calibration.undistort_image(distorted, crop=False)

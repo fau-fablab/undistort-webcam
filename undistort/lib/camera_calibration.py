@@ -25,6 +25,8 @@ class CameraCalibration:
         self.dist_coeffs = None
         self.rvecs = None
         self.tvecs = None
+        self._undistort_cache_key = None
+        self._undistort_cache = None
     
     def calibrate_camera(self, images, pattern_size=(9, 6), square_size=1.0):
         """
@@ -129,13 +131,10 @@ class CameraCalibration:
             raise ValueError("Camera not calibrated yet")
         
         h, w = image.shape[:2]
-        
-        # Get optimal new camera matrix
-        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(
-            self.camera_matrix, self.dist_coeffs, (w, h), 1, (w, h))
+        map1, map2, roi = self._undistort_maps((w, h))
         
         # Undistort
-        dst = cv2.undistort(image, self.camera_matrix, self.dist_coeffs, None, newcameramtx)
+        dst = cv2.remap(image, map1, map2, cv2.INTER_LINEAR)
         
         # Crop the image
         if crop:
@@ -144,6 +143,27 @@ class CameraCalibration:
                 dst = dst[y:y+h, x:x+w]
         
         return dst
+    
+    def _undistort_maps(self, image_size):
+        """
+        Return (map1, map2, roi) for undistorting images of the given size (w, h).
+        
+        Computing the maps is the expensive part of undistortion, so they are
+        cached and only recomputed when the image size or the calibration
+        parameters change. The parameters are part of the cache key (instead of
+        invalidating in load/calibrate) because callers may also assign
+        camera_matrix / dist_coeffs directly.
+        """
+        key = (image_size, self.camera_matrix.tobytes(), np.asarray(self.dist_coeffs).tobytes())
+        if key != self._undistort_cache_key:
+            # Get optimal new camera matrix
+            newcameramtx, roi = cv2.getOptimalNewCameraMatrix(
+                self.camera_matrix, self.dist_coeffs, image_size, 1, image_size)
+            map1, map2 = cv2.initUndistortRectifyMap(
+                self.camera_matrix, self.dist_coeffs, None, newcameramtx, image_size, cv2.CV_16SC2)
+            self._undistort_cache = (map1, map2, roi)
+            self._undistort_cache_key = key
+        return self._undistort_cache
     
     def calculate_reprojection_error(self, objpoints, imgpoints):
         """
